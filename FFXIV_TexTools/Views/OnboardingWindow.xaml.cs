@@ -185,13 +185,42 @@ namespace FFXIV_TexTools.Views
                 return;
             }
 
+            // Validate user-configured directories BEFORE initialization. If any are inaccessible
+            // (e.g., the drive was removed, the network share is offline), clear them and re-run
+            // the first-time setup wizard rather than throwing.
+            var dirFailures = GetInaccessibleConfiguredDirectories();
+            if (dirFailures.Count > 0)
+            {
+                var bulletList = string.Join("\n", dirFailures.Select(f =>
+                    $"   \u2022 {f.Name}: {(string.IsNullOrWhiteSpace(f.Path) ? "(not set)" : f.Path)}"));
+                ViewHelpers.ShowError(
+                    "Configured Directory Inaccessible",
+                    "The following user-configured directories are no longer accessible:\n\n"
+                    + bulletList
+                    + "\n\nThis can happen if a drive was removed, a network share is offline, or the folder was deleted.\n\n"
+                    + "Re-running first-time setup so you can configure new locations.");
+
+                // Clear the bad paths and persist immediately, so a cancelled wizard doesn't leave us
+                // in the same broken state on the next launch.
+                foreach (var f in dirFailures)
+                {
+                    if (f.Name == "Save Directory") Settings.Default.Save_Directory = "";
+                    else if (f.Name == "Index Backup Directory") Settings.Default.Backup_Directory = "";
+                    else if (f.Name == "Modpack Directory") Settings.Default.ModPack_Directory = "";
+                }
+                Settings.Default.Save();
+
+                DoOnboarding();
+                return;
+            }
+
             try
             {
                 InitializeSettings();
             }
             catch
             {
-                ViewHelpers.ShowError("Initialization Failure", "TexTools was unable to initialize all startup directories properly.\n\nPlease check your folder paths are valid and accessible.");
+                ViewHelpers.ShowError("Initialization Failure", "TexTools was unable to initialize startup settings.\n\nPlease check your folder paths are valid and accessible.");
                 DoOnboarding();
                 return;
             }
@@ -249,36 +278,12 @@ namespace FFXIV_TexTools.Views
         /// </summary>
         private static void SetDirectories()
         {
-            // Create/assign directories if they don't exist already.
-            SetSaveDirectory();
-
-            SetBackupsDirectory();
-
-            SetModPackDirectory();
-        }
-
-        private static void SetSaveDirectory()
-        {
-            if (!Directory.Exists(Properties.Settings.Default.Save_Directory))
-            {
-                Directory.CreateDirectory(Properties.Settings.Default.Save_Directory);
-            }
-        }
-
-        private static void SetBackupsDirectory()
-        {
-            if (!Directory.Exists(Properties.Settings.Default.Backup_Directory))
-            {
-                Directory.CreateDirectory(Properties.Settings.Default.Backup_Directory);
-            }
-        }
-
-        private static void SetModPackDirectory()
-        {
-            if (!Directory.Exists(Properties.Settings.Default.ModPack_Directory))
-            {
-                Directory.CreateDirectory(Properties.Settings.Default.ModPack_Directory);
-            }
+            // Create directories if they don't exist already. Non-throwing — startup-time validation
+            // (see OnboardAndInitialize) is responsible for re-routing inaccessible paths through
+            // the onboarding wizard before we get here.
+            TryEnsureDirectory(Properties.Settings.Default.Save_Directory);
+            TryEnsureDirectory(Properties.Settings.Default.Backup_Directory);
+            TryEnsureDirectory(Properties.Settings.Default.ModPack_Directory);
         }
 
         public static void ValidateModlist()
@@ -440,7 +445,71 @@ namespace FFXIV_TexTools.Views
 
         private static string SetDefault(string value, string def)
         {
-            return string.IsNullOrWhiteSpace(value) ? def : value;
+            if (string.IsNullOrWhiteSpace(value)) return def;
+            // Reject saved paths that are no longer reachable (e.g., a removed/unmounted drive)
+            // and fall back to the default so the wizard opens with a sane configuration.
+            if (!TryEnsureDirectory(value)) return def;
+            return value;
+        }
+
+        /// <summary>
+        /// Returns true if the given path exists or could be created. Returns false for
+        /// null/empty input or for any failure (missing drive, permission denied, etc.).
+        /// Never throws.
+        /// </summary>
+        private static bool TryEnsureDirectory(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            try
+            {
+                if (Directory.Exists(path)) return true;
+                Directory.CreateDirectory(path);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Picks an initial directory for a folder picker. Prefers the saved path if reachable,
+        /// then the supplied default, then null (let the OS pick).
+        /// </summary>
+        private static string ResolveInitialDirectory(string saved, string fallback)
+        {
+            if (TryEnsureDirectory(saved)) return Path.GetFullPath(saved);
+            if (TryEnsureDirectory(fallback)) return Path.GetFullPath(fallback);
+            return null;
+        }
+
+        /// <summary>
+        /// Default location for the Save directory used by both first-run setup and the
+        /// folder-picker fallback when the saved path is inaccessible.
+        /// </summary>
+        private static string DefaultSaveDirectory =>
+            Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Saved");
+
+        private static string DefaultBackupDirectory =>
+            Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/Index_Backups");
+
+        private static string DefaultModPackDirectory =>
+            Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/TexTools/ModPacks");
+
+        /// <summary>
+        /// Validates every user-configured directory and returns a list of (display name, configured path)
+        /// for any that are inaccessible. Empty list means everything is OK.
+        /// </summary>
+        private static List<(string Name, string Path)> GetInaccessibleConfiguredDirectories()
+        {
+            var failures = new List<(string, string)>();
+            if (!TryEnsureDirectory(Properties.Settings.Default.Save_Directory))
+                failures.Add(("Save Directory", Properties.Settings.Default.Save_Directory ?? ""));
+            if (!TryEnsureDirectory(Properties.Settings.Default.Backup_Directory))
+                failures.Add(("Index Backup Directory", Properties.Settings.Default.Backup_Directory ?? ""));
+            if (!TryEnsureDirectory(Properties.Settings.Default.ModPack_Directory))
+                failures.Add(("Modpack Directory", Properties.Settings.Default.ModPack_Directory ?? ""));
+            return failures;
         }
 
         public static string GetDefaultInstallDirectory()
@@ -672,8 +741,8 @@ namespace FFXIV_TexTools.Views
                 Title = "Select Default Save Folder",
             };
 
-            Directory.CreateDirectory(Settings.Default.Save_Directory);
-            ofd.InitialDirectory = Path.GetFullPath(Settings.Default.Save_Directory);
+            var initial = ResolveInitialDirectory(Settings.Default.Save_Directory, DefaultSaveDirectory);
+            if (initial != null) ofd.InitialDirectory = initial;
 
             if (!ofd.ShowDialog())
             {
@@ -690,8 +759,8 @@ namespace FFXIV_TexTools.Views
                 Title = "Select Modpack Folder",
             };
 
-            Directory.CreateDirectory(Settings.Default.ModPack_Directory);
-            ofd.InitialDirectory = Path.GetFullPath(Settings.Default.ModPack_Directory);
+            var initial = ResolveInitialDirectory(Settings.Default.ModPack_Directory, DefaultModPackDirectory);
+            if (initial != null) ofd.InitialDirectory = initial;
 
             if (!ofd.ShowDialog())
             {
@@ -708,8 +777,8 @@ namespace FFXIV_TexTools.Views
                 Title = "Select Index Backup Folder",
             };
 
-            Directory.CreateDirectory(Settings.Default.Backup_Directory);
-            ofd.InitialDirectory = Path.GetFullPath(Settings.Default.Backup_Directory);
+            var initial = ResolveInitialDirectory(Settings.Default.Backup_Directory, DefaultBackupDirectory);
+            if (initial != null) ofd.InitialDirectory = initial;
 
             if (!ofd.ShowDialog())
             {

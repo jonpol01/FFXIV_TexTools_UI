@@ -1,6 +1,7 @@
 ﻿using FFXIV_TexTools.Helpers;
 using FFXIV_TexTools.Resources;
 using FFXIV_TexTools.ViewModels;
+using FFXIV_TexTools.Views;
 using FFXIV_TexTools.Views.Controls;
 using System;
 using System.Collections.Generic;
@@ -557,7 +558,9 @@ namespace FFXIV_TexTools.Views.Controls
                     // ModelMap generation needs to go on another thread always.
                     tasks.Add(Task.Run(async () =>
                     {
-                        var colors = ModelTexture.GetCustomColors();
+                        var colors = ViewHelpers.ShouldUseUserColors(InternalFilePath)
+                            ? ModelTexture.GetCustomColors()
+                            : new CustomModelColors();
                         colors.InvertNormalGreen = false;
 
                         var modelMaps = await ModelTexture.GetModelMaps(xivMtrl, false, colors, ViewportVM.HighlightedColorsetRow, tx);

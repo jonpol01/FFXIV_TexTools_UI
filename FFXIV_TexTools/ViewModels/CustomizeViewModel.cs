@@ -540,6 +540,26 @@ namespace FFXIV_TexTools.ViewModels
             Settings.Default.Save();
         }
 
+        /// <summary>
+        /// When true, user-configured skin/hair/eye/etc. colors are applied to every model
+        /// in the previewer including monsters and demihumans. When false (default), those
+        /// colors are reserved for player-character previews and non-chara models render
+        /// with framework defaults.
+        /// </summary>
+        public bool ApplyColorsToNonChara
+        {
+            get => Settings.Default.ApplyColorsToNonChara;
+            set
+            {
+                if (ApplyColorsToNonChara != value)
+                {
+                    Settings.Default.ApplyColorsToNonChara = value;
+                    Settings.Default.Save();
+                    NotifyPropertyChanged(nameof(ApplyColorsToNonChara));
+                }
+            }
+        }
+
 
         /// <summary>
         /// The list of default races

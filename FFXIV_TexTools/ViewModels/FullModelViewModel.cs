@@ -17,6 +17,7 @@
 using FFXIV_TexTools.Helpers;
 using FFXIV_TexTools.Properties;
 using FFXIV_TexTools.Resources;
+using FFXIV_TexTools.Views;
 using FFXIV_TexTools.Views.Models;
 using System;
 using System.Collections.Generic;
@@ -792,7 +793,9 @@ namespace FFXIV_TexTools.ViewModels
                 var mtrlPath = Mtrl.GetMtrlPath(tempMdlPath, newMaterial, mtrlVariant);
                 var mtrl = await Mtrl.GetXivMtrl(mtrlPath, false, tx);
 
-                var colors = ModelTexture.GetCustomColors();
+                var colors = ViewHelpers.ShouldUseUserColors(tempMdlPath)
+                    ? ModelTexture.GetCustomColors()
+                    : new CustomModelColors();
                 colors.InvertNormalGreen = false;
                 var modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, tx);
 
@@ -834,7 +837,9 @@ namespace FFXIV_TexTools.ViewModels
 
                 var mtrlPath = Mtrl.GetMtrlPath(tempMdlPath, newMaterial, mtrlVariant);
                 var mtrl = await Mtrl.GetXivMtrl(mtrlPath);
-                var colors = ModelTexture.GetCustomColors();
+                var colors = ViewHelpers.ShouldUseUserColors(tempMdlPath)
+                    ? ModelTexture.GetCustomColors()
+                    : new CustomModelColors();
                 colors.InvertNormalGreen = false;
                 var modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, MainWindow.UserTransaction);
 
@@ -902,7 +907,9 @@ namespace FFXIV_TexTools.ViewModels
                         {
                             var mtrlPath = Mtrl.GetMtrlPath(tempMdlPath, material);
                             var mtrl = await Mtrl.GetXivMtrl(mtrlPath);
-                            var colors = ModelTexture.GetCustomColors();
+                            var colors = ViewHelpers.ShouldUseUserColors(tempMdlPath)
+                                ? ModelTexture.GetCustomColors()
+                                : new CustomModelColors();
                             colors.InvertNormalGreen = false;
                             var modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, MainWindow.UserTransaction);
 

@@ -457,6 +457,18 @@ namespace FFXIV_TexTools.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ApplyColorsToNonChara {
+            get {
+                return ((bool)(this["ApplyColorsToNonChara"]));
+            }
+            set {
+                this["ApplyColorsToNonChara"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool FixPreDawntrailOnImport {
             get {

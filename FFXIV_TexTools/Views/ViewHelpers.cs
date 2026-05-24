@@ -26,6 +26,8 @@ using System.Windows.Threading;
 using xivModdingFramework.Cache;
 using xivModdingFramework.General.Enums;
 using xivModdingFramework.Helpers;
+using xivModdingFramework.Items;
+using xivModdingFramework.Items.Enums;
 using xivModdingFramework.Mods;
 using xivModdingFramework.Mods.FileTypes;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
@@ -41,6 +43,24 @@ namespace FFXIV_TexTools.Views
 
         public const string LoadModpackFilter = "Modpack Files|*.pmp;*.ttmp2;*.ttmp;*.pmp;*.json";
         public const string ModpackFileFilter = "Modpack Files|*.pmp;*.ttmp2|Penumbra Modpack|*.pmp|TexTools Modpack|*.ttmp2";
+
+        /// <summary>
+        /// User-configured skin/hair/eye/lip/tattoo colors are intended for previewing player gear.
+        /// Returns false for monster and demihuman paths so those render with framework defaults,
+        /// unless the user has opted in via the "Apply selected colours to Non Chara views" setting.
+        /// </summary>
+        public static bool ShouldUseUserColors(string filePath)
+        {
+            // Opt-in to applying colors everywhere.
+            if (Properties.Settings.Default.ApplyColorsToNonChara) return true;
+
+            // Unknown path -> default to applying colors (preserves prior behavior for non-chara-path callers).
+            if (string.IsNullOrEmpty(filePath)) return true;
+
+            var itemType = ItemType.GetItemTypeFromPath(filePath);
+            return itemType != XivItemType.monster && itemType != XivItemType.demihuman;
+        }
+
         public static Progress<(int current, int total, string message)> BindReportProgress(ProgressDialogController controller)
         {
             return new Progress<(int current, int total, string message)>(BindReportProgressAction(controller));

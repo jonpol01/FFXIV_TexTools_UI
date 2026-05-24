@@ -110,6 +110,9 @@
     <Setting Name="AutoMaterialFix" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="ApplyColorsToNonChara" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="FixPreDawntrailOnImport" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
