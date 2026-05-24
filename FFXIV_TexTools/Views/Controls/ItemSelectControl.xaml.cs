@@ -349,6 +349,7 @@ namespace FFXIV_TexTools.Views.Controls
             accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Neck));
             accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Wrists));
             accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Rings));
+            accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Facewear));
         }
 
         private async Task<List<IItem>> BuildCategoryTree()

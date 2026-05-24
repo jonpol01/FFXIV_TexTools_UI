@@ -590,6 +590,15 @@ namespace FFXIV_TexTools.Resources {
                 return ResourceManager.GetString("Gear", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Facewear.
+        /// </summary>
+        internal static string Facewear {
+            get {
+                return ResourceManager.GetString("Facewear", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to General.
