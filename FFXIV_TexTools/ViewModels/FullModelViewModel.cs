@@ -793,11 +793,18 @@ namespace FFXIV_TexTools.ViewModels
                 var mtrlPath = Mtrl.GetMtrlPath(tempMdlPath, newMaterial, mtrlVariant);
                 var mtrl = await Mtrl.GetXivMtrl(mtrlPath, false, tx);
 
-                var colors = ViewHelpers.ShouldUseUserColors(tempMdlPath)
-                    ? ModelTexture.GetCustomColors()
-                    : new CustomModelColors();
-                colors.InvertNormalGreen = false;
-                var modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, tx);
+                ModelTextureData modelMaps;
+                if (ViewHelpers.ShouldUseUserColors(tempMdlPath))
+                {
+                    var colors = ModelTexture.GetCustomColors();
+                    colors.InvertNormalGreen = false;
+                    modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, tx);
+                }
+                else
+                {
+                    // Non-chara path: skip the color override pipeline entirely.
+                    modelMaps = await ModelTexture.GetModelMapsWithoutUserColors(mtrl, false, highlightedRow: -1, tx: tx);
+                }
 
                 // Reindex the material dictionary as materials may have sorted differently
                 ReIndexMaterialDictionary(ttModel, materialDictionary, modelMaps);
@@ -837,11 +844,18 @@ namespace FFXIV_TexTools.ViewModels
 
                 var mtrlPath = Mtrl.GetMtrlPath(tempMdlPath, newMaterial, mtrlVariant);
                 var mtrl = await Mtrl.GetXivMtrl(mtrlPath);
-                var colors = ViewHelpers.ShouldUseUserColors(tempMdlPath)
-                    ? ModelTexture.GetCustomColors()
-                    : new CustomModelColors();
-                colors.InvertNormalGreen = false;
-                var modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, MainWindow.UserTransaction);
+                ModelTextureData modelMaps;
+                if (ViewHelpers.ShouldUseUserColors(tempMdlPath))
+                {
+                    var colors = ModelTexture.GetCustomColors();
+                    colors.InvertNormalGreen = false;
+                    modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, MainWindow.UserTransaction);
+                }
+                else
+                {
+                    // Non-chara path: skip the color override pipeline entirely.
+                    modelMaps = await ModelTexture.GetModelMapsWithoutUserColors(mtrl, false, highlightedRow: -1, tx: MainWindow.UserTransaction);
+                }
 
                 materialDictionary[0] = modelMaps;
             }
@@ -907,11 +921,18 @@ namespace FFXIV_TexTools.ViewModels
                         {
                             var mtrlPath = Mtrl.GetMtrlPath(tempMdlPath, material);
                             var mtrl = await Mtrl.GetXivMtrl(mtrlPath);
-                            var colors = ViewHelpers.ShouldUseUserColors(tempMdlPath)
-                                ? ModelTexture.GetCustomColors()
-                                : new CustomModelColors();
-                            colors.InvertNormalGreen = false;
-                            var modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, MainWindow.UserTransaction);
+                            ModelTextureData modelMaps;
+                            if (ViewHelpers.ShouldUseUserColors(tempMdlPath))
+                            {
+                                var colors = ModelTexture.GetCustomColors();
+                                colors.InvertNormalGreen = false;
+                                modelMaps = await ModelTexture.GetModelMaps(mtrl, false, colors, -1, MainWindow.UserTransaction);
+                            }
+                            else
+                            {
+                                // Non-chara path: skip the color override pipeline entirely.
+                                modelMaps = await ModelTexture.GetModelMapsWithoutUserColors(mtrl, false, highlightedRow: -1, tx: MainWindow.UserTransaction);
+                            }
 
                             materialDictionary[matLoc.First().Key] = modelMaps;
                         }

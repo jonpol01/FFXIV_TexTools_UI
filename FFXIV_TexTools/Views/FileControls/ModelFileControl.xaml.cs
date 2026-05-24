@@ -558,12 +558,18 @@ namespace FFXIV_TexTools.Views.Controls
                     // ModelMap generation needs to go on another thread always.
                     tasks.Add(Task.Run(async () =>
                     {
-                        var colors = ViewHelpers.ShouldUseUserColors(InternalFilePath)
-                            ? ModelTexture.GetCustomColors()
-                            : new CustomModelColors();
-                        colors.InvertNormalGreen = false;
-
-                        var modelMaps = await ModelTexture.GetModelMaps(xivMtrl, false, colors, ViewportVM.HighlightedColorsetRow, tx);
+                        ModelTextureData modelMaps;
+                        if (ViewHelpers.ShouldUseUserColors(InternalFilePath))
+                        {
+                            var colors = ModelTexture.GetCustomColors();
+                            colors.InvertNormalGreen = false;
+                            modelMaps = await ModelTexture.GetModelMaps(xivMtrl, false, colors, ViewportVM.HighlightedColorsetRow, tx);
+                        }
+                        else
+                        {
+                            // Non-chara path: skip the color override pipeline entirely.
+                            modelMaps = await ModelTexture.GetModelMapsWithoutUserColors(xivMtrl, false, highlightedRow: ViewportVM.HighlightedColorsetRow, tx: tx);
+                        }
 
                         lock (textureList)
                         {

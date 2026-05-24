@@ -26,8 +26,6 @@ using System.Windows.Threading;
 using xivModdingFramework.Cache;
 using xivModdingFramework.General.Enums;
 using xivModdingFramework.Helpers;
-using xivModdingFramework.Items;
-using xivModdingFramework.Items.Enums;
 using xivModdingFramework.Mods;
 using xivModdingFramework.Mods.FileTypes;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
@@ -49,16 +47,26 @@ namespace FFXIV_TexTools.Views
         /// Returns false for monster and demihuman paths so those render with framework defaults,
         /// unless the user has opted in via the "Apply selected colours to Non Chara views" setting.
         /// </summary>
+        /// <remarks>
+        /// Uses a direct path-prefix check rather than ItemType.GetItemTypeFromPath because
+        /// demihuman gear lives at <c>chara/demihuman/d####/obj/equipment/...</c> — the
+        /// <c>equipment</c> segment later in the path can outweigh the <c>demihuman</c> segment
+        /// in the framework's item-type matcher, causing demihuman previews to be classified as
+        /// generic equipment and incorrectly receive user color overrides.
+        /// </remarks>
         public static bool ShouldUseUserColors(string filePath)
         {
             // Opt-in to applying colors everywhere.
             if (Properties.Settings.Default.ApplyColorsToNonChara) return true;
 
-            // Unknown path -> default to applying colors (preserves prior behavior for non-chara-path callers).
+            // Unknown path -> default to applying colors (preserves prior behavior).
             if (string.IsNullOrEmpty(filePath)) return true;
 
-            var itemType = ItemType.GetItemTypeFromPath(filePath);
-            return itemType != XivItemType.monster && itemType != XivItemType.demihuman;
+            var normalized = filePath.Replace('\\', '/');
+            if (normalized.StartsWith("chara/monster/", StringComparison.OrdinalIgnoreCase)) return false;
+            if (normalized.StartsWith("chara/demihuman/", StringComparison.OrdinalIgnoreCase)) return false;
+
+            return true;
         }
 
         public static Progress<(int current, int total, string message)> BindReportProgress(ProgressDialogController controller)
