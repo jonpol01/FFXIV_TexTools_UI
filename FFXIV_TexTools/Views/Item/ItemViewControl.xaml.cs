@@ -698,7 +698,7 @@ namespace FFXIV_TexTools.Views.Item
 
             var variantString = "";
             var asIm = Item as IItemModel;
-            if (asIm != null && Imc.UsesImc(Root) && asIm != null && asIm.ModelInfo != null && asIm.ModelInfo.ImcSubsetID >= 0)
+            if (asIm != null && Imc.UsesImc(asIm) && asIm.ModelInfo != null && asIm.ModelInfo.ImcSubsetID >= 0)
             {
                 variantString += " - Variant " + asIm.ModelInfo.ImcSubsetID;
 
@@ -793,6 +793,18 @@ namespace FFXIV_TexTools.Views.Item
             }
 
             var models = await Root.GetModelFiles(tx);
+            if ((Item as IItemModel)?.SecondaryCategory == XivStrings.Facewear)
+            {
+                foreach (var race in XivRaces.PlayableRaces)
+                {
+                    var path = Root.Info.GetModelPath(race);
+                    if (!string.IsNullOrWhiteSpace(path) && !models.Contains(path) && await tx.FileExists(path))
+                    {
+                        models.Add(path);
+                    }
+                }
+            }
+
             foreach (var m in models)
             {
                 if (await tx.FileExists(m))

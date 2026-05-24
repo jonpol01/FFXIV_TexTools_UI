@@ -294,6 +294,9 @@
   <data name="Gear" xml:space="preserve">
     <value>Gear</value>
   </data>
+  <data name="Facewear" xml:space="preserve">
+    <value>Facewear</value>
+  </data>
   <data name="General" xml:space="preserve">
     <value>General</value>
   </data>
