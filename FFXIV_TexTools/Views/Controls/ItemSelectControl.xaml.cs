@@ -349,7 +349,6 @@ namespace FFXIV_TexTools.Views.Controls
             accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Neck));
             accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Wrists));
             accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Rings));
-            accessories.Children.Add(new ItemTreeElement(null, null, XivStrings.Facewear));
         }
 
         private async Task<List<IItem>> BuildCategoryTree()
@@ -381,20 +380,29 @@ namespace FFXIV_TexTools.Views.Controls
 
 
                 // Find our second level parent, if we have one.
-                if (!string.IsNullOrWhiteSpace(item.SecondaryCategory) && item.Name != item.SecondaryCategory)
+                if (!string.IsNullOrWhiteSpace(item.SecondaryCategory))
                 {
+                    // Always look for an existing matching node first (covers pre-created
+                    // category stubs, e.g. Accessoires > Poignets).
                     secondLevel = topLevel.Children.FirstOrDefault(x => x.DisplayName == item.SecondaryCategory);
-                    if (secondLevel == null)
+
+                    // Only create a new second-level node when:
+                    //   (a) none exists, AND
+                    //   (b) the item's name doesn't equal the category name.
+                    // Condition (b) is the original "face paint/equipment decal" exception -
+                    // for items whose name *is* the category, we don't want to invent a stub
+                    // category just to hold a single same-named item. But when a matching
+                    // category was already created (pre-loaded or built up by sibling items),
+                    // routing the item through it is correct.
+                    if (secondLevel == null && item.Name != item.SecondaryCategory)
                     {
-                        //Create it if it doesn't exist.
                         secondLevel = new ItemTreeElement(topLevel, null, item.SecondaryCategory);
                         topLevel.Children.Add(secondLevel);
                     }
                 }
 
-                if (item.Name != item.SecondaryCategory)
+                if (secondLevel != null)
                 {
-                    // Special catch for face paint/equipment decal category.
                     catParent = secondLevel;
                 }
 
